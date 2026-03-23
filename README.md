@@ -2,7 +2,7 @@
 
 Voice-controlled R plotting. Speak a command, get a ggplot2 plot. Free, local, no API key needed.
 
-A local alternative to [ggbot2](https://github.com/tidyverse/ggbot2) that runs entirely on your machine using [Ollama](https://ollama.com) and [Whisper](https://github.com/openai/whisper).
+A free, local alternative to the brilliant [ggbot2](https://github.com/tidyverse/ggbot2), which inspired this project but requires a paid API key. Runs entirely on your machine using [Ollama](https://ollama.com) and [Whisper](https://github.com/openai/whisper).
 
 ---
 
