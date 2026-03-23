@@ -28,6 +28,7 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
     cli::cli_abort("`df` must be a data frame.")
   }
 
+  model <- sub(":latest$", "", model)
   system_prompt <- build_prompt(df, df_name, prompt)
 
   # Load Whisper model (downloads ~75MB on first run, then cached)
