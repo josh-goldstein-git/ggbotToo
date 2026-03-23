@@ -1,0 +1,30 @@
+Package: ggbotToo
+Title: Voice Assistant for R Graphics (Local)
+Version: 0.0.0.9000
+Authors@R:
+    person("Joshua", "Goldstein", , "josh.goldstein@berkeley.edu", role = c("aut", "cre"))
+Description: Interactive Shiny app that generates ggplot2 plots from voice
+    commands using browser audio capture, local Whisper speech-to-text, and a
+    local Ollama language model. No API keys or internet connection required.
+Imports:
+    audio.whisper,
+    av,
+    base64enc,
+    bslib,
+    cli,
+    ellmer (>= 0.3.0),
+    httr2,
+    shiny,
+    stats,
+    tools,
+    withr
+Suggests:
+    mockery,
+    tinyplot,
+    dplyr,
+    testthat (>= 3.0.0)
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Config/testthat/edition: 3
