@@ -81,15 +81,6 @@ ggbot(mydata, model = "deepseek-coder-v2:lite")
 
 ---
 
-## Ideas / roadmap
-
-- **Auto-fix on error**: when generated code fails, automatically send the error back to the LLM to fix (single retry, visible "Fixing..." notification)
-- **Benchmark**: accuracy vs. speed experiment across local models, using real transcripts (with dictation noise) as inputs; use Claude API as judge of plot quality
-- **Add Claude API models**: add `claude-haiku-4-5` (and optionally Sonnet) to the model dropdown via `ellmer::chat_claude()`
-- **Speed up gpt-oss:20b**: try `api_args = list(think = FALSE, options = list(num_predict = 300))` to disable reasoning and cap output length — blocked on ellmer [issue #940](https://github.com/tidyverse/ellmer/issues/940)
-
----
-
 ## How it works
 
 ```

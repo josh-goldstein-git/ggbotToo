@@ -4,6 +4,7 @@
 .httr-oauth
 .DS_Store
 .quarto
+TODO.md
 *.Rcheck/
 *.tar.gz
 # Emacs lock files
