@@ -4,6 +4,21 @@
 #' @importFrom stats predict
 NULL
 
+#' Run ggbotToo with a built-in demo using the penguins dataset
+#'
+#' Opens the ggbotToo Shiny app pre-loaded with the Palmer Penguins dataset
+#' and a "Demo step" button that plays five pre-recorded voice commands through
+#' the Web Audio loopback — no microphone required.
+#'
+#' @param model Ollama model to use. Defaults to `"qwen2.5-coder"`.
+#' @return A Shiny app object (runs in the foreground).
+#' @export
+ggbot_demo <- function(model = "qwen2.5-coder") {
+  if (!requireNamespace("palmerpenguins", quietly = TRUE))
+    cli::cli_abort("Install palmerpenguins: install.packages(\"palmerpenguins\")")
+  ggbot(palmerpenguins::penguins, model = model)
+}
+
 #' Interactive Shiny app that generates plots from voice or text commands using
 #' a local Ollama model and browser-based audio capture with local Whisper STT.
 #'
@@ -30,6 +45,17 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
 
   model <- sub(":latest$", "", model)
   system_prompt <- build_prompt(df, df_name, prompt)
+
+  demo_labels <- c(
+    "scatter plot of bill length by bill depth",
+    "color the points by species",
+    "add a smooth regression line",
+    "add a title Penguin Bill Dimensions",
+    "make the axis labels larger"
+  )
+
+  shiny::addResourcePath("ggbotToo-demo",
+    system.file("audio", package = "ggbotToo"))
 
   # Load Whisper model (downloads ~75MB on first run, then cached)
   model_dir <- tools::R_user_dir("ggbotToo", "data")
@@ -86,6 +112,13 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
           onclick = "submitText()",
           "Go"
         )
+      ),
+      tags$hr(),
+      tags$div(
+        style = "display: flex; align-items: center; gap: 6px;",
+        actionButton("run_demo", "\u25b6 Demo step",
+                     class = "btn btn-outline-success btn-sm"),
+        textOutput("demo_step_label", inline = TRUE)
       ),
       tags$hr(),
       tags$div(
@@ -199,6 +232,61 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
       Shiny.addCustomMessageHandler('mic_ready', function(_) {
         document.getElementById('mic_status_js').textContent = 'Mic: ready';
       });
+
+      // --- Web Audio loopback demo ---
+
+      // Play audio through speakers only (intro narration, not fed to LLM)
+      async function playAudio(url, statusText) {
+        document.getElementById('mic_status_js').textContent = statusText || 'Demo: playing...';
+        const resp    = await fetch(url);
+        const buf     = await resp.arrayBuffer();
+        const ctx     = new (window.AudioContext || window.webkitAudioContext)();
+        const decoded = await ctx.decodeAudioData(buf);
+        const source  = ctx.createBufferSource();
+        source.buffer = decoded;
+        source.connect(ctx.destination);
+        source.onended = function() {
+          document.getElementById('mic_status_js').textContent = 'Mic: ready';
+        };
+        source.start();
+      }
+
+      // Play audio through speakers AND record via loopback for Whisper + LLM
+      async function playDemoCommand(url, label) {
+        document.getElementById('mic_status_js').textContent = 'Demo: ' + label;
+        const resp    = await fetch(url);
+        const buf     = await resp.arrayBuffer();
+        const ctx     = new (window.AudioContext || window.webkitAudioContext)();
+        const decoded = await ctx.decodeAudioData(buf);
+        const dest    = ctx.createMediaStreamDestination();
+        const source  = ctx.createBufferSource();
+        source.buffer = decoded;
+        source.connect(dest);
+        source.connect(ctx.destination);
+        const recorder = new MediaRecorder(dest.stream);
+        const chunks   = [];
+        recorder.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
+        recorder.onstop = function() {
+          var blob   = new Blob(chunks, {type: recorder.mimeType});
+          var reader = new FileReader();
+          reader.onloadend = function() {
+            var b64 = reader.result.split(',')[1];
+            Shiny.setInputValue('audio_blob', {data: b64, mime: blob.type}, {priority: 'event'});
+          };
+          reader.readAsDataURL(blob);
+        };
+        recorder.start();
+        source.start();
+        source.onended = function() { recorder.stop(); };
+      }
+
+      Shiny.addCustomMessageHandler('play_intro', function(msg) {
+        playAudio(msg.url, 'Demo: intro...');
+      });
+
+      Shiny.addCustomMessageHandler('play_demo_step', function(msg) {
+        playDemoCommand(msg.url, msg.label);
+      });
     "))
   )
 
@@ -213,6 +301,38 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
     })
     last_code   <- reactiveVal()
     log_entries <- reactiveVal(list())
+
+    demo_step <- reactiveVal(-1L)
+
+    output$demo_step_label <- renderText({
+      s <- demo_step()
+      if (s < 0L)
+        "intro + 5 steps"
+      else if (s == 0L)
+        paste0("(1/", length(demo_labels), ") ", demo_labels[[1L]])
+      else if (s >= length(demo_labels))
+        "Demo complete"
+      else
+        paste0("(", s + 1L, "/", length(demo_labels), ") ", demo_labels[[s + 1L]])
+    })
+
+    observeEvent(input$run_demo, {
+      s <- demo_step()
+      if (s >= length(demo_labels)) return()
+      if (s < 0L) {
+        demo_step(0L)
+        session$sendCustomMessage("play_intro", list(
+          url = "/ggbotToo-demo/intro.wav"
+        ))
+      } else {
+        next_step <- s + 1L
+        demo_step(next_step)
+        session$sendCustomMessage("play_demo_step", list(
+          url   = paste0("/ggbotToo-demo/step", next_step, ".wav"),
+          label = demo_labels[[next_step]]
+        ))
+      }
+    })
 
     add_log <- function(speaker, text) {
       log_entries(c(log_entries(), list(list(speaker = speaker, text = text))))

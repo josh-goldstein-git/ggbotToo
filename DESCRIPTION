@@ -20,6 +20,7 @@ Imports:
     withr
 Suggests:
     mockery,
+    palmerpenguins,
     tinyplot,
     dplyr,
     testthat (>= 3.0.0)
