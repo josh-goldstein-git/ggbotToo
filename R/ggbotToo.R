@@ -345,8 +345,9 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
         removeNotification(id)
         session$sendCustomMessage("mic_ready", list())
       }, add = TRUE)
+      llm_text <- build_user_message(user_text, last_code())
       response <- tryCatch(
-        chat()$chat(user_text, echo = "none"),
+        chat()$chat(llm_text, echo = "none"),
         error = function(e) paste("Error calling Ollama:", conditionMessage(e))
       )
       add_log("Bot", response)
@@ -515,5 +516,19 @@ build_prompt <- function(df, df_name, prompt_style = "ggplot") {
     " Its first few rows look like this:\n\n", df_preview,
     "\n\nIts summary looks like this:\n\n", df_summary,
     "\n\nUnless explicitly told otherwise, use this data frame for plotting."
+  )
+}
+
+#' Build the message sent to the LLM, injecting current plot code when available
+#'
+#' @param user_text The user's request (transcript or typed command)
+#' @param current_code The current plot code, or NULL if no plot exists yet
+#' @return Character string to pass to the LLM
+#' @keywords internal
+build_user_message <- function(user_text, current_code = NULL) {
+  if (is.null(current_code)) return(user_text)
+  paste0(
+    "Current plot code:\n```r\n", current_code, "\n```\n\n",
+    "User request: ", user_text
   )
 }
