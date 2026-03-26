@@ -45,10 +45,23 @@ This will:
 
 ---
 
+![Demo](man/figures/demo.gif)
+
 ## Usage
+
+### Try the demo first (no microphone needed)
 
 ```r
 library(ggbotToo)
+install.packages("palmerpenguins")  # one-time
+ggbot_demo()
+```
+
+This opens the app pre-loaded with the Palmer Penguins dataset. Click **▶ Demo step** to play five pre-recorded voice commands through the full pipeline — Whisper transcription, Ollama code generation, and live plot updates — without needing a microphone.
+
+### Use with your own data
+
+```r
 ggbot(mydata)
 ```
 

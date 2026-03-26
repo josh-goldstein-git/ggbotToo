@@ -43,7 +43,7 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
     cli::cli_abort("`df` must be a data frame.")
   }
 
-  model <- sub(":latest$", "", model)
+  model <- sub(":.*$", "", model)
   system_prompt <- build_prompt(df, df_name, prompt)
 
   demo_labels <- c(
@@ -440,10 +440,14 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
 
     output$plot <- renderPlot(res = 96, {
       req(last_code())
-      tryCatch(
-        eval(parse(text = last_code()), envir = new.env(parent = globalenv())),
-        error = function(e) stop(e)
-      )
+      tryCatch({
+        result <- withVisible(
+          eval(parse(text = last_code()), envir = new.env(parent = globalenv()))
+        )
+        if (result$visible) print(result$value)
+      }, error = function(e) {
+        stop(conditionMessage(e), call. = FALSE)
+      })
     })
 
     output$code_text <- renderText({
@@ -463,9 +467,10 @@ ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
 extract_code <- function(text) {
   # Strip <think>...</think> blocks emitted by reasoning models
   text <- gsub("(?s)<think>.*?</think>", "", text, perl = TRUE)
-  m <- regmatches(text, regexpr("(?s)```r?\\n(.*?)```", text, perl = TRUE))
+  # Match ```r, ```{r}, ``` or any other language tag (e.g. deepseek uses ```{r})
+  m <- regmatches(text, regexpr("(?s)```[^\\n]*\\n(.*?)```", text, perl = TRUE))
   if (length(m) == 0) return(NULL)
-  gsub("^```r?\\n|```$", "", m[[1]])
+  gsub("^```[^\\n]*\\n|```$", "", m[[1]], perl = TRUE)
 }
 
 #' List available Ollama models
@@ -474,7 +479,8 @@ ollama_models <- function() {
   tryCatch({
     resp <- httr2::request("http://localhost:11434/api/tags") |> httr2::req_perform()
     tags <- httr2::resp_body_json(resp)
-    vapply(tags$models, `[[`, character(1), "name")
+    names <- vapply(tags$models, `[[`, character(1), "name")
+    unique(sub(":.*$", "", names))
   }, error = function(e) character(0))
 }
 

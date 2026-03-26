@@ -24,6 +24,11 @@ test_that("extract_code strips <think> blocks from reasoning models", {
   expect_equal(extract_code(response), "plot(1:10)\n")
 })
 
+test_that("extract_code handles ```{r} fences (e.g. deepseek output)", {
+  response <- "```{r}\nggplot(mtcars, aes(x = wt)) + geom_point()\n```"
+  expect_equal(extract_code(response), "ggplot(mtcars, aes(x = wt)) + geom_point()\n")
+})
+
 test_that("extract_code takes the first block when multiple are present", {
   response <- "```r\nplot(1:10)\n```\nOr alternatively:\n```r\nbarplot(1:5)\n```"
   result <- extract_code(response)
