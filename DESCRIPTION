@@ -6,6 +6,7 @@ Authors@R:
 Description: Interactive Shiny app that generates ggplot2 plots from voice
     commands using browser audio capture, local Whisper speech-to-text, and a
     local Ollama language model. No API keys or internet connection required.
+    Inspired by 'ggbot2' by Winston Chang and Hadley Wickham.
 Imports:
     audio.whisper,
     av,
