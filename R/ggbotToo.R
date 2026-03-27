@@ -71,6 +71,10 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
         onmouseleave = "ggbotStopRecording()",
         "Hold to speak"
       ),
+      tags$div(
+        style = "font-size: 1em; margin-top: 8px; color: #555;",
+        tags$strong("Dataset: "), df_name
+      ),
       tags$hr(),
       tags$strong("Or type a command:"),
       tags$div(
@@ -102,7 +106,12 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
     ),
     card(
       full_screen = TRUE,
-      card_header("Plot"),
+      card_header(
+        class = "d-flex justify-content-between align-items-center",
+        "Plot",
+        downloadButton("download_plot", label = "", icon = icon("download"),
+                       class = "btn-sm btn-outline-secondary", style = "padding: 2px 6px;")
+      ),
       card_body(padding = 0, plotOutput("plot", fill = TRUE)),
       height = "66%"
     ),
@@ -110,7 +119,12 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
       height = "34%",
       card(
         full_screen = TRUE,
-        card_header("Code"),
+        card_header(
+          class = "d-flex justify-content-between align-items-center",
+          "Code",
+          downloadButton("download_code", label = "", icon = icon("download"),
+                         class = "btn-sm btn-outline-secondary", style = "padding: 2px 6px;")
+        ),
         verbatimTextOutput("code_text")
       ),
       card(
@@ -256,6 +270,7 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
       add_log("Bot", response)
       code <- extract_code(response)
       if (!is.null(code)) {
+        code <- sanitize_code(code)
         # Try evaluating; if it errors, ask the LLM to fix it (one retry)
         err <- try_render_code(code)
         if (!is.null(err)) {
@@ -361,6 +376,28 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
       }
     )
 
+    # Download current code as .R file
+    output$download_code <- downloadHandler(
+      filename = function() paste0("ggbot-code-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".R"),
+      content = function(file) {
+        writeLines(if (!is.null(last_code())) last_code() else "# No code generated yet", file)
+      }
+    )
+
+    # Download current plot as PNG
+    output$download_plot <- downloadHandler(
+      filename = function() paste0("ggbot-plot-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".png"),
+      content = function(file) {
+        grDevices::png(file, width = 1200, height = 800, res = 150)
+        on.exit(grDevices::dev.off())
+        code <- last_code()
+        if (!is.null(code)) {
+          result <- eval(parse(text = code), envir = new.env(parent = globalenv()))
+          if (inherits(result, "gg")) print(result)
+        }
+      }
+    )
+
     output$data_summary <- renderText({
       paste(utils::capture.output(utils::str(df)), collapse = "\n")
     })
@@ -399,6 +436,19 @@ extract_code <- function(text) {
   m <- regmatches(text, regexpr("(?s)```[^\\n]*\\n(.*?)```", text, perl = TRUE))
   if (length(m) == 0) return(NULL)
   gsub("^```[^\\n]*\\n|```$", "", m[[1]], perl = TRUE)
+}
+
+# --- Code guardrail --------------------------------------------------------
+
+# Strip install.packages() calls from generated code. The LLM sometimes
+# wraps plotting code in if(!require(...)) { install.packages(...) } blocks.
+# We silently remove those lines rather than blocking the whole response.
+sanitize_code <- function(code) {
+  lines <- strsplit(code, "\n")[[1]]
+  lines <- grep("^\\s*if\\s*\\(!\\s*require", lines, value = TRUE, invert = TRUE)
+  lines <- grep("^\\s*install\\.packages\\s*\\(", lines, value = TRUE, invert = TRUE)
+  lines <- grep("^\\s*remove\\.packages\\s*\\(", lines, value = TRUE, invert = TRUE)
+  paste(lines, collapse = "\n")
 }
 
 # Test-render code in an isolated function so the png device is properly scoped.

@@ -4,6 +4,8 @@ Voice-controlled R plotting. Speak a command, get a ggplot2 plot. Free, local, n
 
 A free, local alternative to the brilliant [ggbot2](https://github.com/tidyverse/ggbot2), which inspired this project but requires a paid API key. Runs entirely on your machine using [Ollama](https://ollama.com) and [Whisper](https://github.com/openai/whisper).
 
+**Heads up:** This package runs AI models locally on your Mac. First-time setup downloads ~9GB of model files. After that, everything runs offline — no internet or API keys needed.
+
 ---
 
 ## Requirements
@@ -18,11 +20,7 @@ A free, local alternative to the brilliant [ggbot2](https://github.com/tidyverse
 
 **Step 1 — Install Ollama** (one time)
 
-Download from [ollama.com](https://ollama.com) or run in Terminal:
-
-```bash
-brew install ollama
-```
+Download the Mac app from [ollama.com](https://ollama.com) and drag it to Applications. When you launch it, a small llama icon appears in your menu bar — that means the Ollama server is running in the background. (If you prefer Homebrew: `brew install ollama`.)
 
 **Step 2 — Install the R package**
 
@@ -30,6 +28,8 @@ brew install ollama
 remotes::install_github("bnosac/audio.whisper")
 remotes::install_github("josh-goldstein-git/ggbotToo")
 ```
+
+> **Note:** `audio.whisper` compiles C++ code from source. If the install fails, you likely need Apple's Command Line Tools. Open Terminal and run `xcode-select --install`, follow the prompts, then try again.
 
 **Step 3 — First-time setup** (downloads models, one time)
 
@@ -39,7 +39,7 @@ ggbot_setup()
 ```
 
 This will:
-- Check Ollama is running (start it with `ollama serve` in Terminal if needed)
+- Check Ollama is running (make sure the llama icon is in your menu bar)
 - Pull the default language model (`deepseek-coder-v2:lite`, ~9GB)
 - Download the Whisper speech-to-text model (~75MB)
 
@@ -49,10 +49,10 @@ This will:
 
 ```r
 library(ggbotToo)
-ggbot(mydata)
+ggbot(mtcars)
 ```
 
-This opens a Shiny app in your browser. Hold the **Hold to speak** button and describe the plot you want. Release to transcribe and generate. You can also type commands in the text box.
+Pass any data frame (or tibble). This opens a Shiny app in your browser. Hold the **Hold to speak** button and describe the plot you want. Release to transcribe and generate. You can also type commands in the text box.
 
 **Default model:** `deepseek-coder-v2:lite` — good balance of quality and speed.
 Switch models in the sidebar dropdown, or pass at startup:
@@ -74,34 +74,34 @@ library(palmerpenguins)
 ggbot(penguins)
 ```
 
-**Step 1** — *"scatter plot of bill length by bill depth"*
+**Step 1** — Hold the button and say in a clear voice: *"scatter plot of bill length by bill depth"*
 
-The app generates a basic scatter plot. You see the ggplot2 code in the Code panel and the plot in the Plot panel.
+The app transcribes your speech, sends it to the LLM, and displays a basic scatter plot. You see the ggplot2 code in the Code panel and the plot in the Plot panel.
 
-**Step 2** — *"color the points by species"*
+**Step 2** — Say: *"color the points by species"*
 
 The app remembers the previous plot and adds `color = species` to the aesthetic mapping.
 
-**Step 3** — *"add a smooth regression line"*
+**Step 3** — Say: *"add a smooth regression line"*
 
 A `geom_smooth()` layer is added on top of the existing scatter plot.
 
-**Step 4** — *"add a title Penguin Bill Dimensions"*
+**Step 4** — Say: *"add a title Penguin Bill Dimensions"*
 
 `ggtitle("Penguin Bill Dimensions")` is appended to the plot.
 
-**Step 5** — *"make the axis labels larger"*
+**Step 5** — Say: *"make the axis labels larger"*
 
 The theme is updated with larger axis text. Each refinement builds on the previous code — nothing is lost.
 
-If the generated code has an error, the app automatically asks the LLM to fix it and retries once.
+If the generated code has an error, the app automatically asks the LLM to fix it and retries once. If the plot goes off the rails, just say *"start over, give me a histogram of bill length"* — the LLM will discard the current code and begin fresh. Each session works with a single data frame — to switch datasets, close the app and call `ggbot()` again with the new data.
 
 ---
 
 ## Notes
 
 - Run `ggbot()` in a **dedicated R session** — Shiny blocks the console
-- Keep a Terminal window open with `ollama serve` running
+- Make sure the Ollama llama icon is visible in your menu bar before running
 - First run after install will be slow (model loading); subsequent runs are faster
 - The app works best with column names that are real words — it reads your data structure and uses it to interpret your commands
 - Also supports base R / tinyplot: `ggbot(mydata, prompt = "baseR")`
