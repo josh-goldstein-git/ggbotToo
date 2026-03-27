@@ -4,10 +4,14 @@
 \alias{ggbot_setup}
 \title{Check and set up ggbotToo dependencies}
 \usage{
-ggbot_setup(model = "qwen2.5-coder", whisper_model = "tiny", quiet = FALSE)
+ggbot_setup(
+  model = "deepseek-coder-v2:lite",
+  whisper_model = "tiny",
+  quiet = FALSE
+)
 }
 \arguments{
-\item{model}{Ollama model to check/pull. Defaults to \code{"qwen2.5-coder"}.}
+\item{model}{Ollama model to check/pull. Defaults to \code{"deepseek-coder-v2:lite"}.}
 
 \item{whisper_model}{Whisper model variant. Only \code{"tiny"} is currently
 supported.}

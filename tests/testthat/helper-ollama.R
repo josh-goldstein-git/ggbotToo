@@ -5,7 +5,7 @@ skip_if_no_whisper_model <- function() {
 }
 
 # Skip tests that require a running Ollama instance
-skip_if_no_ollama <- function(model = "qwen2.5-coder") {
+skip_if_no_ollama <- function(model = "deepseek-coder-v2:lite") {
   result <- tryCatch(
     {
       resp <- httr2::request("http://localhost:11434/api/tags") |>
@@ -23,7 +23,7 @@ skip_if_no_ollama <- function(model = "qwen2.5-coder") {
 
 # Ask the LLM a question and return response + extracted code
 ask_ggbot <- function(prompt_text, df = mtcars, df_name = "mtcars",
-                      model = "qwen2.5-coder") {
+                      model = "deepseek-coder-v2:lite") {
   system_prompt <- build_prompt(df, df_name)
   chat <- ellmer::chat_ollama(model = model, system_prompt = system_prompt)
   response <- chat$chat(prompt_text, echo = "none")

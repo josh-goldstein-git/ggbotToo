@@ -37,7 +37,7 @@ test_that("LLM remembers the data frame across sequential commands", {
   skip_if_no_ollama()
   system_prompt <- build_prompt(mtcars, "mtcars")
   chat <- ellmer::chat_ollama(
-    model = "qwen2.5-coder",
+    model = "deepseek-coder-v2:lite",
     system_prompt = system_prompt
   )
 
@@ -61,7 +61,7 @@ test_that("LLM remembers previous plot type across commands", {
   skip_if_no_ollama()
   system_prompt <- build_prompt(mtcars, "mtcars")
   chat <- ellmer::chat_ollama(
-    model = "qwen2.5-coder",
+    model = "deepseek-coder-v2:lite",
     system_prompt = system_prompt
   )
 
@@ -78,7 +78,7 @@ test_that("LLM handles a third sequential command correctly", {
   skip_if_no_ollama()
   system_prompt <- build_prompt(mtcars, "mtcars")
   chat <- ellmer::chat_ollama(
-    model = "qwen2.5-coder",
+    model = "deepseek-coder-v2:lite",
     system_prompt = system_prompt
   )
 

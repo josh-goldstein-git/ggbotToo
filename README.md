@@ -9,7 +9,7 @@ A free, local alternative to the brilliant [ggbot2](https://github.com/tidyverse
 ## Requirements
 
 - Mac with Apple Silicon (M1/M2/M3)
-- R ≥ 4.3
+- R >= 4.3
 - [Ollama](https://ollama.com) — free, runs LLMs locally
 
 ---
@@ -31,7 +31,7 @@ remotes::install_github("bnosac/audio.whisper")
 remotes::install_github("josh-goldstein-git/ggbotToo")
 ```
 
-**Step 3 — First-time setup** (downloads ~5GB of models, one time)
+**Step 3 — First-time setup** (downloads models, one time)
 
 ```r
 library(ggbotToo)
@@ -40,48 +40,61 @@ ggbot_setup()
 
 This will:
 - Check Ollama is running (start it with `ollama serve` in Terminal if needed)
-- Pull the default language model (~4.7GB)
+- Pull the default language model (`deepseek-coder-v2:lite`, ~9GB)
 - Download the Whisper speech-to-text model (~75MB)
 
 ---
 
-![Demo](man/figures/demo.gif)
-
 ## Usage
-
-### Try the demo first (no microphone needed)
 
 ```r
 library(ggbotToo)
-install.packages("palmerpenguins")  # one-time
-ggbot_demo()
-```
-
-This opens the app pre-loaded with the Palmer Penguins dataset. Click **▶ Demo step** to play five pre-recorded voice commands through the full pipeline — Whisper transcription, Ollama code generation, and live plot updates — without needing a microphone.
-
-### Use with your own data
-
-```r
 ggbot(mydata)
 ```
 
-This opens a Shiny app in your browser. Hold the **Hold to speak** button and describe the plot you want. Release to transcribe and generate.
+This opens a Shiny app in your browser. Hold the **Hold to speak** button and describe the plot you want. Release to transcribe and generate. You can also type commands in the text box.
 
-**Example commands:**
-- *"scatter plot of birth year by death age"*
-- *"color the points by state"*
-- *"add a regression line"*
-- *"make the axis labels larger"*
-- *"add a title"*
-
-The app remembers the conversation, so you can refine iteratively.
-
-**Faster model (default):** `qwen2.5-coder` — good for quick exploration
-**Smarter model:** switch in the sidebar dropdown, or pass at startup:
+**Default model:** `deepseek-coder-v2:lite` — good balance of quality and speed.
+Switch models in the sidebar dropdown, or pass at startup:
 
 ```r
-ggbot(mydata, model = "deepseek-coder-v2:lite")
+ggbot(mydata, model = "qwen2.5-coder")
 ```
+
+---
+
+## Walkthrough
+
+Here is a typical session using the Palmer Penguins dataset. Each step shows what you would say (or type) and what the app produces.
+
+**Setup:**
+```r
+library(ggbotToo)
+library(palmerpenguins)
+ggbot(penguins)
+```
+
+**Step 1** — *"scatter plot of bill length by bill depth"*
+
+The app generates a basic scatter plot. You see the ggplot2 code in the Code panel and the plot in the Plot panel.
+
+**Step 2** — *"color the points by species"*
+
+The app remembers the previous plot and adds `color = species` to the aesthetic mapping.
+
+**Step 3** — *"add a smooth regression line"*
+
+A `geom_smooth()` layer is added on top of the existing scatter plot.
+
+**Step 4** — *"add a title Penguin Bill Dimensions"*
+
+`ggtitle("Penguin Bill Dimensions")` is appended to the plot.
+
+**Step 5** — *"make the axis labels larger"*
+
+The theme is updated with larger axis text. Each refinement builds on the previous code — nothing is lost.
+
+If the generated code has an error, the app automatically asks the LLM to fix it and retries once.
 
 ---
 
@@ -91,6 +104,7 @@ ggbot(mydata, model = "deepseek-coder-v2:lite")
 - Keep a Terminal window open with `ollama serve` running
 - First run after install will be slow (model loading); subsequent runs are faster
 - The app works best with column names that are real words — it reads your data structure and uses it to interpret your commands
+- Also supports base R / tinyplot: `ggbot(mydata, prompt = "baseR")`
 
 ---
 

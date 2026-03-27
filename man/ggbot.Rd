@@ -5,14 +5,14 @@
 \title{Interactive Shiny app that generates plots from voice or text commands using
 a local Ollama model and browser-based audio capture with local Whisper STT.}
 \usage{
-ggbot(df, model = "qwen2.5-coder", prompt = "ggplot")
+ggbot(df, model = "deepseek-coder-v2:lite", prompt = "ggplot")
 }
 \arguments{
 \item{df}{A data frame to plot. Must be a simple variable name, not an
 expression.}
 
 \item{model}{Ollama model to use for code generation. Defaults to
-"qwen2.5-coder".}
+"deepseek-coder-v2:lite".}
 
 \item{prompt}{Prompt style: \code{"ggplot"} (default) or \code{"baseR"}. Or pass a
 custom character string to use as the system prompt prefix directly.}

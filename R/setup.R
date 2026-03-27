@@ -4,14 +4,14 @@
 #' downloads the Whisper tiny model if needed. Run this once after installing
 #' the package.
 #'
-#' @param model Ollama model to check/pull. Defaults to `"qwen2.5-coder"`.
+#' @param model Ollama model to check/pull. Defaults to `"deepseek-coder-v2:lite"`.
 #' @param whisper_model Whisper model variant. Only `"tiny"` is currently
 #'   supported.
 #' @param quiet Suppress progress messages if `TRUE`.
 #' @return Invisibly returns a named logical vector indicating which components
 #'   are ready: `ollama`, `model`, `whisper`.
 #' @export
-ggbot_setup <- function(model = "qwen2.5-coder",
+ggbot_setup <- function(model = "deepseek-coder-v2:lite",
                         whisper_model = "tiny",
                         quiet = FALSE) {
   status <- c(ollama = FALSE, model = FALSE, whisper = FALSE)
