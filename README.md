@@ -56,11 +56,14 @@ ggbot(mtcars)
 
 Pass any data frame (or tibble). This opens a Shiny app in your browser. Hold the **Hold to speak** button and describe the plot you want. Release to transcribe and generate. You can also type commands in the text box.
 
-**Default model:** `deepseek-coder-v2:lite` — good balance of quality and speed.
-Switch models in the sidebar dropdown, or pass at startup:
+**Default model:** `qwen2.5-coder` — free, local, no account needed.
+
+If you have a [Claude Code](https://claude.ai/code) subscription, select **claude-sonnet** or **claude-haiku** from the dropdown for significantly better results — especially for open-ended requests like "make it beautiful" or "design a multi-panel display that reveals the key finding". Claude can also start from a blank slate: "show me something interesting about this data."
 
 ```r
-ggbot(mydata, model = "qwen2.5-coder")
+ggbot(mydata)                              # free, local (qwen2.5-coder)
+ggbot(mydata, model = "claude-sonnet")     # requires Claude Code subscription
+ggbot(mydata, model = "claude-haiku")      # faster, still subscription-based
 ```
 
 ---
