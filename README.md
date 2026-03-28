@@ -6,6 +6,8 @@ A free, local alternative to the brilliant [ggbot2](https://github.com/tidyverse
 
 **Heads up:** This package runs AI models locally on your Mac. First-time setup downloads ~9GB of model files. After that, everything runs offline — no internet or API keys needed.
 
+![ggbotToo demo: six-panel distribution comparison built by voice](man/figures/demo.png)
+
 ---
 
 ## Requirements
