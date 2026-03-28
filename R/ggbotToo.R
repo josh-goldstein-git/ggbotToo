@@ -17,7 +17,7 @@ NULL
 #' @return A Shiny app object. Runs in the foreground; use a separate R session
 #'   if you need the console while the app is running.
 #' @export
-ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
+ggbot <- function(df, model = "claude", prompt = "ggplot") {
   if (missing(df)) {
     cli::cli_abort("ggbot() requires a data frame variable as the `df` argument.")
   }
@@ -28,7 +28,7 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
     cli::cli_abort("`df` must be a data frame.")
   }
 
-  model <- sub(":.*$", "", model)
+  if (!startsWith(model, "claude")) model <- sub(":.*$", "", model)
   system_prompt <- build_prompt(df, df_name, prompt)
 
   # Load Whisper model (downloads ~75MB on first run, then cached)
@@ -244,9 +244,6 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
       active_model(input$selected_model)
     })
 
-    chat <- reactive({
-      ellmer::chat_ollama(model = active_model(), system_prompt = system_prompt)
-    })
     last_code   <- reactiveVal()
     log_entries <- reactiveVal(list())
 
@@ -263,10 +260,8 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
         session$sendCustomMessage("mic_ready", list())
       }, add = TRUE)
       llm_text <- build_user_message(user_text, last_code())
-      response <- tryCatch(
-        chat()$chat(llm_text, echo = "none"),
-        error = function(e) paste("Error calling Ollama:", conditionMessage(e))
-      )
+      response <- call_llm(active_model(), system_prompt, llm_text)
+      if (is.null(response)) response <- "Error: LLM call failed — check model is available."
       add_log("Bot", response)
       code <- extract_code(response)
       if (!is.null(code)) {
@@ -281,10 +276,7 @@ ggbot <- function(df, model = "deepseek-coder-v2:lite", prompt = "ggplot") {
           retry_msg <- paste("Error:", err, "\u2014 retrying...")
           add_log("Bot", retry_msg)
           session$sendCustomMessage("show_bot_msg", list(text = retry_msg))
-          retry <- tryCatch(
-            chat()$chat(fix_msg, echo = "none"),
-            error = function(e) NULL
-          )
+          retry <- call_llm(active_model(), system_prompt, fix_msg)
           if (!is.null(retry)) {
             retry_code <- extract_code(retry)
             if (!is.null(retry_code)) {
@@ -465,15 +457,47 @@ try_render_code <- function(code) {
   })
 }
 
+#' Call an LLM backend and return the response text
+#' @keywords internal
+call_llm <- function(model, system_prompt, msg) {
+  if (model == "claude")            .call_claude_code(system_prompt, msg)
+  else if (model == "claude-haiku") .call_claude_code(system_prompt, msg,
+                                      model_id = "claude-haiku-4-5-20251001")
+  else                              .call_ollama(model, system_prompt, msg)
+}
+
+.call_claude_code <- function(system_prompt, msg, model_id = NULL) {
+  Sys.unsetenv("ANTHROPIC_API_KEY")  # force CLI to use subscription, not API credits
+  full_prompt <- paste0(system_prompt, "\n\n", msg)
+  args <- c("--no-session-persistence", "-p", "--output-format", "text")
+  if (!is.null(model_id)) args <- c(args, "--model", model_id)
+  result <- tryCatch(
+    system2("claude", args = args,
+            input = full_prompt, stdout = TRUE, stderr = FALSE),
+    error = function(e) { warning("claude CLI: ", conditionMessage(e)); NULL }
+  )
+  if (is.null(result)) return(NULL)
+  if (isTRUE(attr(result, "status") != 0L)) return(NULL)
+  paste(result, collapse = "\n")
+}
+
+.call_ollama <- function(model, system_prompt, msg) {
+  tryCatch({
+    chat_obj <- ellmer::chat_ollama(model = model, system_prompt = system_prompt)
+    chat_obj$chat(msg, echo = "none")
+  }, error = function(e) { warning("Ollama: ", conditionMessage(e)); NULL })
+}
+
 #' List available Ollama models
 #' @keywords internal
 ollama_models <- function() {
-  tryCatch({
+  ollama <- tryCatch({
     resp <- httr2::request("http://localhost:11434/api/tags") |> httr2::req_perform()
     tags <- httr2::resp_body_json(resp)
-    names <- vapply(tags$models, `[[`, character(1), "name")
-    unique(sub(":latest$", "", names))
+    nms  <- vapply(tags$models, `[[`, character(1), "name")
+    unique(sub(":latest$", "", nms))
   }, error = function(e) character(0))
+  c("claude", "claude-haiku", ollama)
 }
 
 #' Build prompt with data frame information
