@@ -17,7 +17,7 @@ NULL
 #' @return A Shiny app object. Runs in the foreground; use a separate R session
 #'   if you need the console while the app is running.
 #' @export
-ggbot <- function(df, model = "claude", prompt = "ggplot") {
+ggbot <- function(df, model = "qwen2.5-coder", prompt = "ggplot") {
   if (missing(df)) {
     cli::cli_abort("ggbot() requires a data frame variable as the `df` argument.")
   }
@@ -460,7 +460,7 @@ try_render_code <- function(code) {
 #' Call an LLM backend and return the response text
 #' @keywords internal
 call_llm <- function(model, system_prompt, msg) {
-  if (model == "claude")            .call_claude_code(system_prompt, msg)
+  if (model %in% c("claude", "claude-sonnet")) .call_claude_code(system_prompt, msg)
   else if (model == "claude-haiku") .call_claude_code(system_prompt, msg,
                                       model_id = "claude-haiku-4-5-20251001")
   else                              .call_ollama(model, system_prompt, msg)
@@ -497,7 +497,7 @@ ollama_models <- function() {
     nms  <- vapply(tags$models, `[[`, character(1), "name")
     unique(sub(":latest$", "", nms))
   }, error = function(e) character(0))
-  c("claude", "claude-haiku", ollama)
+  c("claude-sonnet", "claude-haiku", ollama)
 }
 
 #' Build prompt with data frame information
